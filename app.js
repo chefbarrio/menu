@@ -27,6 +27,35 @@ if (customerNameInput) {
     localStorage.setItem("customerName", customerNameInput.value);
 }
 
+// Crear botón eliminar en cada card
+cards.forEach(card => {
+  const imgContainer = card.querySelector(".img-container");
+
+  const deleteBtn = document.createElement("div");
+  deleteBtn.classList.add("delete-badge");
+  deleteBtn.innerText = "✕";
+
+  imgContainer.appendChild(deleteBtn);
+
+  deleteBtn.onclick = (e) => {
+    e.stopPropagation(); // evita que agregue producto
+
+    const name = card.dataset.name;
+
+    if (!cart[name]) return;
+
+    const confirmar = confirm("¿Eliminar este producto completamente?");
+    if (!confirmar) return;
+
+    total -= cart[name].qty * cart[name].price;
+    delete cart[name];
+
+    saveData();
+    restoreBadges();
+    updateCart();
+  };
+});
+
 /* ===== INICIO ===== */
 restoreBadges();
 updateCart();
@@ -47,6 +76,7 @@ cards.forEach(card => {
     badge.innerText = cart[name].qty;
 
     saveData();
+	restoreBadges();
     showToast();
     updateCart();
   };
@@ -113,7 +143,7 @@ document.querySelectorAll(".minus-btn").forEach(btn => {
 
 /* ===== WHATSAPP ===== */
 if (sendOrderBtn) {
-  sendOrderBtn.onclick = () => {
+  sendOrderBtn.onclick = async () => {
 
     if (!customerNameInput.value.trim()) {
       alert("Escribe tu nombre");
@@ -146,6 +176,12 @@ if (sendOrderBtn) {
       });
     }
 
+// 🔒 BLOQUEAR BOTÓN
+sendOrderBtn.disabled = true;
+const textoOriginal = sendOrderBtn.innerText;
+sendOrderBtn.innerText = "Enviando pedido...";
+sendOrderBtn.style.opacity = "0.6";
+
     fetch("https://script.google.com/macros/s/AKfycbzZV0aMcegLsJ_La1p6499ZlzZC2I9F1TbTWsJPxMjvK9--KQUM0Cl5Yarc3g9Y0kMuNA/exec", {
       method: "POST",
       body: new URLSearchParams({
@@ -166,9 +202,14 @@ if (sendOrderBtn) {
 
     })
     .catch(error => {
-      console.error("Error al guardar en Sheets:", error);
-      alert("Hubo un problema guardando el pedido");
-    });
+  console.error("Error al guardar en Sheets:", error);
+  alert("Hubo un problema guardando el pedido");
+
+  // 🔓 REACTIVAR BOTÓN
+  sendOrderBtn.disabled = false;
+  sendOrderBtn.innerText = textoOriginal;
+  sendOrderBtn.style.opacity = "1";
+});
 
   };
 }
@@ -181,14 +222,21 @@ function saveData(){
 
 /* ===== BADGES ===== */
 function restoreBadges(){
+
   document.querySelectorAll(".badge").forEach(b => b.style.display = "none");
+  document.querySelectorAll(".delete-badge").forEach(b => b.style.display = "none");
 
   for (let item in cart){
     document.querySelectorAll(".card").forEach(card => {
       if (card.dataset.name === item){
+
         const badge = card.querySelector(".badge");
+        const deleteBtn = card.querySelector(".delete-badge");
+
         badge.style.display = "flex";
         badge.innerText = cart[item].qty;
+
+        deleteBtn.style.display = "flex";
       }
     });
   }
