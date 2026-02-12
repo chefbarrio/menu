@@ -113,7 +113,7 @@ document.querySelectorAll(".minus-btn").forEach(btn => {
 
 /* ===== WHATSAPP ===== */
 if (sendOrderBtn) {
-  sendOrderBtn.onclick = () => {
+  sendOrderBtn.onclick = async () => {
 
     if (!customerNameInput.value.trim()) {
       alert("Escribe tu nombre");
@@ -124,6 +124,12 @@ if (sendOrderBtn) {
       alert("Carrito vacío");
       return;
     }
+	
+	// 🔒 BLOQUEAR BOTÓN
+	sendOrderBtn.disabled = true;
+	const textoOriginal = sendOrderBtn.innerText;
+	sendOrderBtn.innerText = "Enviando pedido...";
+	sendOrderBtn.style.opacity = "0.6"
 
     let msg = "🍔 CHEF BARRIOS\n";
     msg += "Cliente: " + customerNameInput.value + "\n\n";
@@ -166,9 +172,14 @@ if (sendOrderBtn) {
 
     })
     .catch(error => {
-      console.error("Error al guardar en Sheets:", error);
-      alert("Hubo un problema guardando el pedido");
-    });
+	console.error("Error al guardar en Sheets:", error);
+	alert("Hubo un problema guardando el pedido");
+
+	// 🔓 REACTIVAR BOTÓN
+	sendOrderBtn.disabled = false;
+	sendOrderBtn.innerText = textoOriginal;
+	sendOrderBtn.style.opacity = "1";
+});
 
   };
 }
@@ -319,3 +330,4 @@ if (getLocationBtn) {
 }
 
 });
+
