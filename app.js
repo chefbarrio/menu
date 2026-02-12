@@ -182,7 +182,7 @@ const textoOriginal = sendOrderBtn.innerText;
 sendOrderBtn.innerText = "Enviando pedido...";
 sendOrderBtn.style.opacity = "0.6";
 
-    fetch("https://script.google.com/macros/s/AKfycbzZV0aMcegLsJ_La1p6499ZlzZC2I9F1TbTWsJPxMjvK9--KQUM0Cl5Yarc3g9Y0kMuNA/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbwvyatbDFfHzLN7k6Xfv1JjbSMD-7DX-qL9AGhdoxDFIS3Uz9iaE4fLh9wQcWvwk737IQ/exec", {
       method: "POST",
       body: new URLSearchParams({
         cliente: customerNameInput.value,
@@ -367,5 +367,6 @@ if (getLocationBtn) {
 }
 
 });
+
 
 
