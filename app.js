@@ -15,17 +15,12 @@ const openCartBtn = document.getElementById("openCart");
 const closeCartBtn = document.getElementById("closeCart");
 const sendOrderBtn = document.getElementById("sendOrder");
 const customerNameInput = document.getElementById("customerName");
-const getLocationBtn = document.getElementById("getLocation");
 let locationLink = "";
 
-
-
-/* ===== NOMBRE ===== */
-if (customerNameInput) {
-  customerNameInput.value = localStorage.getItem("customerName") || "";
-  customerNameInput.oninput = () =>
-    localStorage.setItem("customerName", customerNameInput.value);
-}
+// Evitar que el input dispare el click del producto
+document.querySelectorAll(".sugerencia-input").forEach(input => {
+  input.addEventListener("click", e => e.stopPropagation());
+});
 
 // Crear botón eliminar en cada card
 cards.forEach(card => {
@@ -56,31 +51,113 @@ cards.forEach(card => {
   };
 });
 
+
 /* ===== INICIO ===== */
 restoreBadges();
 updateCart();
 
-/* ===== AGREGAR ===== */
-cards.forEach(card => {
-  card.onclick = () => {
-    const name = card.dataset.name;
-    const price = Number(card.dataset.price);
-    const badge = card.querySelector(".badge");
+/* =====================
+   MODAL PRODUCTO
+===================== */
 
-    if (!cart[name]) cart[name] = { qty: 0, price };
+const productModal = document.getElementById("productModal");
+const closeProduct = document.getElementById("closeProduct");
+const modalImage = document.getElementById("modalImage");
+const modalName = document.getElementById("modalName");
+const modalDescription = document.getElementById("modalDescription");
+const modalComment = document.getElementById("modalComment");
+const quantityValue = document.getElementById("quantityValue");
+const plusBtn = document.getElementById("plusBtn");
+const minusBtn = document.getElementById("minusBtn");
+const addToCartBtn = document.getElementById("addToCartBtn");
 
-    cart[name].qty++;
-    total += price;
+let selectedProduct = null;
+let modalQty = 1;
 
-    badge.style.display = "flex";
-    badge.innerText = cart[name].qty;
+/* ABRIR MODAL AL TOCAR IMAGEN */
+document.querySelectorAll(".card .img-container img").forEach(img => {
+  img.addEventListener("click", (e) => {
 
-    saveData();
-	restoreBadges();
-    showToast();
-    updateCart();
-  };
+    e.stopPropagation();
+
+    const card = e.target.closest(".card");
+
+    selectedProduct = {
+      name: card.dataset.name,
+      price: Number(card.dataset.price),
+      image: card.querySelector("img").src
+    };
+
+    modalImage.src = selectedProduct.image;
+    modalName.textContent = selectedProduct.name;
+    modalDescription.textContent = "Delicioso platillo preparado al momento.";
+    modalComment.value = "";
+    modalQty = 1;
+    quantityValue.textContent = modalQty;
+
+    productModal.classList.add("active");
+  });
 });
+
+/* CERRAR */
+closeProduct.onclick = () => {
+  productModal.classList.remove("active");
+};
+
+/* CANTIDAD */
+plusBtn.onclick = () => {
+  modalQty++;
+  quantityValue.textContent = modalQty;
+};
+
+minusBtn.onclick = () => {
+  if (modalQty > 1) {
+    modalQty--;
+    quantityValue.textContent = modalQty;
+  }
+};
+
+/* AGREGAR DESDE MODAL */
+addToCartBtn.onclick = () => {
+
+  if (!selectedProduct) return;
+
+  const name = selectedProduct.name;
+  const price = selectedProduct.price;
+  const note = modalComment.value.trim();
+
+  if (!cart[name]) {
+    cart[name] = { qty: 0, price, note: "" };
+  }
+
+  cart[name].qty += modalQty;
+  total += price * modalQty;
+
+  if (note) {
+    cart[name].note = note;
+  }
+
+  saveData();
+  restoreBadges();
+  updateCart();
+  showToast();
+
+  productModal.classList.remove("active");
+};
+
+
+
+/* ===== NOMBRE ===== */
+if (customerNameInput) {
+  customerNameInput.value = localStorage.getItem("customerName") || "";
+  customerNameInput.oninput = () =>
+    localStorage.setItem("customerName", customerNameInput.value);
+}
+
+/* ===== AGREGAR ===== */
+
+
+
 
 /* ===== CARRITO ===== */
 function updateCart() {
@@ -155,53 +232,115 @@ if (sendOrderBtn) {
       return;
     }
 
-    let msg = "🍔 CHEF BARRIOS\n";
+    const orderType = document.querySelector("input[name='orderType']:checked");
+    const paymentType = document.querySelector("input[name='paymentType']:checked");
+    const addressInput = document.getElementById("address");
+	const requiereCambio = document.querySelector("input[name='requiereCambio']:checked");
+
+
+    if (!orderType) {
+      alert("Selecciona tipo de pedido");
+      return;
+    }
+
+    if (!paymentType) {
+      alert("Selecciona forma de pago");
+      return;
+    }
+	
+
+    // ✅ AHORA SÍ: crear el mensaje primero
+    let msg = "🍔 CHEF\n";
     msg += "Cliente: " + customerNameInput.value + "\n\n";
 
     for (let item in cart) {
       const sub = (cart[item].qty * cart[item].price).toFixed(2);
       msg += `${cart[item].qty} x ${item} - $${sub}\n`;
+	  
+	   if (cart[item].note) {
+    msg += `   📝 ${cart[item].note}\n`;
+  }
     }
 
     msg += "\nTotal: $" + total.toFixed(2);
+    msg += "\nTipo de pedido: " + orderType.value;
 
-    // ENVIAR A GOOGLE SHEETS
-    const itemsArray = [];
+    if (orderType.value === "domicilio") {
 
-    for (let item in cart) {
-      itemsArray.push({
-        nombre: item,
-        cantidad: cart[item].qty,
-        precio: cart[item].price
-      });
-    }
+  if (!addressInput.value.trim()) {
+    alert("Escribe tu dirección o usa tu ubicación");
+    return;
+  }
 
-// 🔒 BLOQUEAR BOTÓN
-sendOrderBtn.disabled = true;
-const textoOriginal = sendOrderBtn.innerText;
-sendOrderBtn.innerText = "Enviando pedido...";
-sendOrderBtn.style.opacity = "0.6";
+  msg += "\nDirección: " + addressInput.value;
 
-    fetch("https://script.google.com/macros/s/AKfycbwvyatbDFfHzLN7k6Xfv1JjbSMD-7DX-qL9AGhdoxDFIS3Uz9iaE4fLh9wQcWvwk737IQ/exec", {
-      method: "POST",
-      body: new URLSearchParams({
-        cliente: customerNameInput.value,
-        items: JSON.stringify(itemsArray)
-      })
-    })
-    .then(() => {
+  if (locationLink) {
+    msg += "\n📍 Ubicación Google Maps: " + locationLink;
+  }
+}
 
-      cart = {};
-      total = 0;
-      saveData();
-      restoreBadges();
-      updateCart();
+    // 💳 FORMA DE PAGO
+if (paymentType.value === "transferencia") {
+  msg += "\nForma de pago: Transferencia";
+} else {
+  msg += "\nForma de pago: Efectivo";
 
-      window.location.href =
-        "https://wa.me/529811347875?text=" + encodeURIComponent(msg);
+  if (requiereCambio && requiereCambio.value === "si") {
+    msg += "\nCambio para: $" + montoCambio.value;
+  } else {
+    msg += "\nNo requiere cambio";
+  }
+}
+// ENVIAR A GOOGLE SHEETS
+const itemsArray = [];
 
-    })
-    .catch(error => {
+for (let item in cart) {
+  itemsArray.push({
+    nombre: item,
+    cantidad: cart[item].qty,
+    precio: cart[item].price
+  });
+}
+
+	// 🔒 BLOQUEAR BOTÓN
+	sendOrderBtn.disabled = true;
+	const textoOriginal = sendOrderBtn.innerText;
+	sendOrderBtn.innerText = "Enviando pedido...";
+	sendOrderBtn.style.opacity = "0.6";
+
+fetch("https://script.google.com/macros/s/AKfycby0eABhFCzb0p-N-TDv2UASIP20ZCSyuZ_1RNdyuzJ0x5BwZdtLm-xXHRlTfBwLI5v-1Q/exec", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/x-www-form-urlencoded"
+  },
+  body: new URLSearchParams({
+    cliente: customerNameInput.value,
+    items: JSON.stringify(itemsArray)
+  })
+})
+.then(res => res.text())
+.then(data => {
+
+  console.log("Respuesta de Sheets:", data);
+
+  if (data !== "OK") {
+    throw new Error("No respondió OK");
+  }
+
+  // 🧹 Limpiar carrito
+  cart = {};
+  total = 0;
+  saveData();
+  restoreBadges();
+  updateCart();
+
+  // 📲 Ir a WhatsApp
+  window.location.href =
+    "https://wa.me/529811347875?text=" + encodeURIComponent(msg);
+
+})
+.catch(error => {
+
   console.error("Error al guardar en Sheets:", error);
   alert("Hubo un problema guardando el pedido");
 
@@ -210,7 +349,6 @@ sendOrderBtn.style.opacity = "0.6";
   sendOrderBtn.innerText = textoOriginal;
   sendOrderBtn.style.opacity = "1";
 });
-
   };
 }
 
@@ -302,22 +440,34 @@ const transferenciaRadio = document.querySelector(
 );
 const campoCambio = document.getElementById("campo-cambio");
 const montoCambio = document.getElementById("monto-cambio");
+const datosTransferencia = document.getElementById("datos-transferencia");
 
-if (efectivoRadio && transferenciaRadio && campoCambio) {
 
-  efectivoRadio.addEventListener("change", () => {
-    campoCambio.style.display = "block";
+const paymentRadios = document.querySelectorAll("input[name='paymentType']");
+const requiereCambioRadios = document.querySelectorAll("input[name='requiereCambio']");
+
+paymentRadios.forEach(radio => {
+  radio.addEventListener("change", function () {
+
+    if (this.value === "efectivo") {
+      campoCambio.style.display = "block";
+      datosTransferencia.style.display = "none";
+    } else {
+      campoCambio.style.display = "none";
+      montoCambio.style.display = "none";
+      datosTransferencia.style.display = "block";
+    }
+
   });
+});
 
-  transferenciaRadio.addEventListener("change", () => {
-    campoCambio.style.display = "none";
-    montoCambio.style.display = "none";
-  });
-}
-
-document.querySelectorAll("input[name='requiereCambio']").forEach(radio => {
-  radio.addEventListener("change", () => {
-    montoCambio.style.display = radio.value === "si" ? "block" : "none";
+requiereCambioRadios.forEach(radio => {
+  radio.addEventListener("change", function () {
+    if (this.value === "si") {
+      montoCambio.style.display = "block";
+    } else {
+      montoCambio.style.display = "none";
+    }
   });
 });
 
@@ -334,39 +484,92 @@ orderTypeRadios.forEach(radio => {
   });
 });
 
-if (getLocationBtn) {
-  getLocationBtn.onclick = () => {
+/* =====================
+   MAPA INTERACTIVO
+===================== */
 
-    if (!navigator.geolocation) {
-      alert("Tu celular no soporta ubicación");
-      return;
-    }
+const openMapBtn = document.getElementById("openMap");
+const mapModal = document.getElementById("mapModal");
+const confirmLocationBtn = document.getElementById("confirmLocation");
+const closeMapBtn = document.getElementById("closeMap");
 
-    getLocationBtn.innerText = "Obteniendo ubicación...";
-	
-	
+let mapInstance;
+let marker;
+let selectedLatLng;
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
+if (openMapBtn) {
 
-        locationLink = `https://maps.google.com/?q=${lat},${lng}`;
+  openMapBtn.onclick = () => {
 
-        document.getElementById("address").value =
-          "Ubicación enviada por GPS 📍";
+    mapModal.style.display = "flex";
 
-        getLocationBtn.innerText = "📍 Ubicación lista";
-      },
-      () => {
-        alert("No se pudo obtener la ubicación");
-        getLocationBtn.innerText = "📍 Usar ubicación actual";
+    if (!mapInstance) {
+
+      const defaultLat = 19.4326;
+      const defaultLng = -99.1332;
+
+      mapInstance = L.map("map").setView([defaultLat, defaultLng], 15);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap"
+      }).addTo(mapInstance);
+
+      marker = L.marker([defaultLat, defaultLng], {
+        draggable: true
+      }).addTo(mapInstance);
+
+      selectedLatLng = marker.getLatLng();
+
+      marker.on("dragend", () => {
+        selectedLatLng = marker.getLatLng();
+      });
+
+      mapInstance.on("click", (e) => {
+        marker.setLatLng(e.latlng);
+        selectedLatLng = e.latlng;
+      });
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          mapInstance.setView([lat, lng], 17);
+          marker.setLatLng([lat, lng]);
+          selectedLatLng = marker.getLatLng();
+        });
       }
-    );
+    }
   };
 }
 
+if (confirmLocationBtn) {
+  confirmLocationBtn.onclick = () => {
+
+    if (!selectedLatLng) return;
+
+    const lat = selectedLatLng.lat;
+    const lng = selectedLatLng.lng;
+
+    locationLink = `https://maps.google.com/?q=${lat},${lng}`;
+
+    document.getElementById("address").value =
+      "Ubicación seleccionada 📍";
+
+    mapModal.style.display = "none";
+  };
+}
+
+if (closeMapBtn) {
+  closeMapBtn.onclick = () => {
+    mapModal.style.display = "none";
+  };
+}
+
+
 });
+
+
 
 
 

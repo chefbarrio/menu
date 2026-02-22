@@ -114,40 +114,40 @@
   <h3 class="subtitulo">Trancas</h3>
   <div class="products">
 
-    <div class="card" data-name="Tranca de pastor c/QUESO" data-price="60">
+    <div class="card" data-name="Tranca de pastor con/QUESO" data-price="60">
       <div class="img-container">
         <img src="img/trancapastor.jpg">
         <div class="badge">0</div>
       </div>
       <p class="price">$60.00</p>
-      <p>Tranca de pastor c/QUESO</p>
+      <p>Tranca de pastor con/QUESO</p>
     </div>
 
-    <div class="card" data-name="Tranca de pastor s/QUESO" data-price="55">
+    <div class="card" data-name="Tranca de pastor sin/QUESO" data-price="55">
       <div class="img-container">
         <img src="img/trancapastor.jpg">
         <div class="badge">0</div>
       </div>
       <p class="price">$55.00</p>
-      <p>Tranca de pastor s/QUESO</p>
+      <p>Tranca de pastor sin/QUESO</p>
     </div>
 
-    <div class="card" data-name="Trancas de chicharron prensado c/QUESO" data-price="60">
+    <div class="card" data-name="Trancas de chicharron prensado con/QUESO" data-price="60">
       <div class="img-container">
         <img src="img/trancachicharron.jpg">
         <div class="badge">0</div>
       </div>
       <p class="price">$60.00</p>
-      <p>Tranca de chicharron prensado c/QUESO</p>
+      <p>Tranca de chicharron prensado con/QUESO</p>
     </div>
 
-    <div class="card" data-name="Trancas de chicharron prensado s/QUESO" data-price="55">
+    <div class="card" data-name="Trancas de chicharron prensado sin/QUESO" data-price="55">
       <div class="img-container">
         <img src="img/trancachicharron.jpg">
         <div class="badge">0</div>
       </div>
       <p class="price">$55.00</p>
-      <p>Tranca de chicharron prensado s/QUESO</p>
+      <p>Tranca de chicharron prensado sin/QUESO</p>
     </div>
 
 
@@ -543,6 +543,34 @@
 
 <div class="toast" id="toast">Producto agregado ✅</div>
 
+<!-- MODAL PRODUCTO -->
+<div class="product-modal" id="productModal">
+  <div class="product-content">
+
+    <button class="close-product" id="closeProduct">✕</button>
+
+    <img id="modalImage" class="modal-image">
+
+    <h2 id="modalName"></h2>
+
+    <p id="modalDescription" class="modal-description"></p>
+
+    <textarea id="modalComment" placeholder="Instrucciones especiales... (Ej: sin cebolla)"></textarea>
+
+    <div class="modal-bottom">
+
+      <div class="quantity">
+        <button id="minusBtn">−</button>
+        <span id="quantityValue">1</span>
+        <button id="plusBtn">+</button>
+      </div>
+
+      <button id="addToCartBtn">Agregar al carrito</button>
+
+    </div>
+
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>
